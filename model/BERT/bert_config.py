@@ -88,7 +88,8 @@ class BertConfig(object):
 
 
 if __name__ == "__main__":
-    import sys, os
+    import os
+    import sys
 
     sys.path.append(os.getcwd())
 
