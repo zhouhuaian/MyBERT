@@ -4,7 +4,7 @@ import sys
 sys.path.append(os.getcwd())
 import logging
 import torch
-from util.log_helper import logger_init
+from utils.log_helper import logger_init
 from model.BERT.config import BertConfig
 from model.BERT.bert import BertEmbedding
 from model.BERT.bert import BertAttention
@@ -14,7 +14,7 @@ from model.BERT.bert import BertModel
 
 
 if __name__ == "__main__":
-    logger_init(log_filename="test", log_level=logging.DEBUG)
+    logger_init(log_filename="test_bert", log_level=logging.DEBUG)
 
     json_file = "./archive/bert_base_chinese/config.json"
     config = BertConfig.from_json_file(json_file)
