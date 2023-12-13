@@ -181,10 +181,6 @@ class LoadSenClsDataset:
         创建DataLoader
         :param only_test: 是否只返回测试集
         """
-        train_data, max_len = self.token_to_idx(filepath=train_filepath)
-        if self.max_sen_len == "same":
-            self.max_sen_len = max_len
-
         test_data, _ = self.token_to_idx(filepath=test_filepath)
         test_loader = DataLoader(
             test_data,
@@ -194,6 +190,10 @@ class LoadSenClsDataset:
         )
         if only_test:
             return test_loader
+
+        train_data, max_len = self.token_to_idx(filepath=train_filepath)
+        if self.max_sen_len == "same":
+            self.max_sen_len = max_len
 
         train_loader = DataLoader(
             train_data,
