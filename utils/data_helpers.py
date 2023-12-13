@@ -234,3 +234,81 @@ class LoadSenClsDataset:
         batch_labels = torch.tensor(batch_labels, dtype=torch.long)
 
         return batch_seqs, batch_labels
+
+
+class LoadPairSenClsDataset(LoadSenClsDataset):
+    """加载文本对分类数据集"""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        pass
+
+    # 重载子类中的token_to_idx和generate_batch方法
+    @cache_decorator
+    def token_to_idx(self, filepath=None):
+        """
+        将token序列转换为索引序列，并返回最长序列长度
+        """
+        with open(filepath, "r", encoding="utf-8") as f:
+            raw_iter = f.readlines()
+        data = []  # data列表中每个元素表示一个索引序列、对应的token_type_ids序列及标签
+        max_len = 0  # 最长序列长度
+
+        for raw_line in tqdm(raw_iter, ncols=80):
+            # 取出两个序列（前提、假设）和类别标签
+            line = raw_line.rstrip("\n").split(self.split_sep)
+            seq1, seq2, label = line[0], line[1], line[2]
+            # 分词并转换为索引序列
+            idx_seq1 = [self.vocab[token] for token in self.tokenizer(seq1)]
+            idx_seq2 = [self.vocab[token] for token in self.tokenizer(seq2)]
+            # 将两个索引序列拼接成一个序列，并添加[CLS]、[SEP] token
+            idx_seq = [self.CLS_IDX] + idx_seq1 + [self.SEP_IDX] + idx_seq2
+
+            # BERT模型最大支持512个token的序列
+            if len(idx_seq) > self.max_position_embeddings - 1:
+                idx_seq = idx_seq[: self.max_position_embeddings - 1]
+            idx_seq += [self.SEP_IDX]
+
+            # 创建token_type_id序列，用于表示token所在序列
+            seg_seq1 = [0] * (len(idx_seq1) + 2)  # 起始[CLS]和中间的[SEP]两个token属于第一个序列
+            seg_seq2 = [1] * (len(idx_seq) - len(seg_seq1))  # 末尾的[SEP]token属于第二个序列
+
+            idx_seq = torch.tensor(idx_seq, dtype=torch.long)
+            seg_seq = torch.tensor(seg_seq1 + seg_seq2, dtype=torch.long)
+            label = torch.tensor(int(label), dtype=torch.long)  # 类别标签0~2
+            max_len = max(max_len, idx_seq.size(0))
+            data.append((idx_seq, seg_seq, label))
+
+        return data, max_len
+
+    def generate_batch(self, data_batch):
+        """
+        对每个批次中的样本进行处理的函数，将作为一个参数传入DataLoader的构造函数
+        :param data_batch: 一个批次的数据
+        """
+        batch_seqs, batch_segs, batch_labels = [], [], []
+
+        # 遍历一个批次内的样本，取出索引序列、token_type_id序列和标签
+        for seq, seg, label in data_batch:
+            batch_seqs.append(seq)
+            batch_segs.append(seg)
+            batch_labels.append(label)
+
+        batch_seqs = pad_sequence(
+            batch_seqs,
+            padding_value=self.PAD_IDX,
+            max_len=self.max_sen_len,
+            batch_first=False,
+        )
+
+        # 对token_type_id序列进行填充，注意：虽然填充id也是0（和第一个序列中的token一样），但是在分类任务中padding token不产生影响
+        batch_segs = pad_sequence(
+            batch_segs,
+            padding_value=self.PAD_IDX,
+            max_len=self.max_sen_len,
+            batch_first=False,
+        )
+
+        batch_labels = torch.tensor(batch_labels, dtype=torch.long)
+
+        return batch_seqs, batch_segs, batch_labels

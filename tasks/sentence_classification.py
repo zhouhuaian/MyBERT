@@ -34,7 +34,13 @@ class ModelConfig:
         self.model_save_dir = os.path.join(self.project_dir, "cache")
         if not os.path.exists(self.model_save_dir):
             os.makedirs(self.model_save_dir)
+
         self.log_save_dir = os.path.join(self.project_dir, "logs")
+        logger_init(
+            log_filename="sen_cls",
+            log_level=logging.INFO,
+            log_dir=self.log_save_dir,
+        )
 
         self.epochs = 10
         self.batch_size = 64
@@ -43,12 +49,6 @@ class ModelConfig:
         self.is_sample_shuffle = True  # 是否打乱数据集
         self.max_sen_len = None  # 填充模式
         self.eval_per_epoch = 2  # 验证模型的epoch数
-
-        logger_init(
-            log_filename="sen_cls",
-            log_level=logging.INFO,
-            log_dir=self.log_save_dir,
-        )
 
         # 导入BERT模型部分配置
         bert_config_path = os.path.join(self.pretrained_model_dir, "config.json")

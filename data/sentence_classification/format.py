@@ -19,7 +19,7 @@ label_map = {
 }
 
 
-def format(filepath="./toutiao_cat_data.txt"):
+def format(filepath=None):
     np.random.seed(42)
     raw_data = open(filepath, "r", encoding="utf-8").readlines()
     num_samples = len(raw_data)
@@ -57,4 +57,4 @@ def format(filepath="./toutiao_cat_data.txt"):
 
 
 if __name__ == "__main__":
-    format()
+    format(filepath="./toutiao_cat_data.txt")
