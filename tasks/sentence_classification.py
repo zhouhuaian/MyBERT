@@ -94,7 +94,7 @@ def train(config: ModelConfig):
         pad_index=config.pad_token_id,
         is_sample_shuffle=config.is_sample_shuffle,
     )
-    train_loader, test_loader, val_loader = dataset.data_loader(
+    train_loader, val_loader, test_loader = dataset.data_loader(
         config.train_filepath, config.val_filepath, config.test_filepath
     )
 

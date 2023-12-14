@@ -22,20 +22,20 @@ if __name__ == "__main__":
         is_sample_shuffle=model_config.is_sample_shuffle,
     )
 
-    train_loader, test_loader, val_loader = dataset.data_loader(
+    train_loader, val_loader, test_loader = dataset.data_loader(
         model_config.train_filepath,
         model_config.val_filepath,
         model_config.test_filepath,
     )
 
-    for sample, seg, label in train_loader:
-        print(sample.shape)  # #[seq_len, batch_size]
-        print(sample.transpose(0, 1))  # #[batch_size, seq_len]
-        print(seg.shape)  # #[seq_len, batch_size]
-        print(label.shape)  # #[batch_size,]
-        print(label)
+    for seqs, segs, labels in train_loader:
+        print(seqs.shape)  # #[seq_len, batch_size]
+        print(seqs.transpose(0, 1))  # #[batch_size, seq_len]
+        print(segs.shape)  # #[seq_len, batch_size]
+        print(labels.shape)  # #[batch_size,]
+        print(labels)
 
-        padding_mask = (sample == dataset.PAD_IDX).transpose(0, 1)
+        padding_mask = (seqs == dataset.PAD_IDX).transpose(0, 1)
         print(padding_mask.shape)  # #[batch_size, seq_len]
 
         break

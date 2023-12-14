@@ -25,7 +25,7 @@ if __name__ == "__main__":
         is_sample_shuffle=model_config.is_sample_shuffle,
     )
 
-    train_loader, test_loader, val_loader = dataset.data_loader(
+    train_loader, val_loader, test_loader = dataset.data_loader(
         model_config.train_filepath,
         model_config.val_filepath,
         model_config.test_filepath,

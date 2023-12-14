@@ -210,7 +210,7 @@ class LoadSenClsDataset:
             collate_fn=self.generate_batch,
         )
 
-        return train_loader, test_loader, val_loader
+        return train_loader, val_loader, test_loader
 
     def generate_batch(self, data_batch):
         """
@@ -243,7 +243,7 @@ class LoadPairSenClsDataset(LoadSenClsDataset):
         super().__init__(**kwargs)
         pass
 
-    # 重载子类中的token_to_idx和generate_batch方法
+    # 重载父类LoadSenClsDataset中的token_to_idx和generate_batch方法
     @cache_decorator
     def token_to_idx(self, filepath=None):
         """
@@ -264,14 +264,14 @@ class LoadPairSenClsDataset(LoadSenClsDataset):
             # 将两个索引序列拼接成一个序列，并添加[CLS]、[SEP] token
             idx_seq = [self.CLS_IDX] + idx_seq1 + [self.SEP_IDX] + idx_seq2
 
-            # BERT模型最大支持512个token的序列
+            # BERT模型最大支持512个token的序列，若超过，则截断
             if len(idx_seq) > self.max_position_embeddings - 1:
                 idx_seq = idx_seq[: self.max_position_embeddings - 1]
             idx_seq += [self.SEP_IDX]
 
             # 创建token_type_id序列，用于表示token所在序列
             seg_seq1 = [0] * (len(idx_seq1) + 2)  # 起始[CLS]和中间的[SEP]两个token属于第一个序列
-            seg_seq2 = [1] * (len(idx_seq) - len(seg_seq1))  # 末尾的[SEP]token属于第二个序列
+            seg_seq2 = [1] * (len(idx_seq) - len(seg_seq1))  # 末尾的[SEP]token则属于第二个序列
 
             idx_seq = torch.tensor(idx_seq, dtype=torch.long)
             seg_seq = torch.tensor(seg_seq1 + seg_seq2, dtype=torch.long)
