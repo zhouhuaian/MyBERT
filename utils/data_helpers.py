@@ -1,3 +1,4 @@
+from ast import arg
 import os
 import time
 import logging
@@ -66,36 +67,55 @@ def pad_sequence(sequences, padding_value=0, max_len=None, batch_first=False):
     return out_tensor
 
 
-def cache_decorator(func):
+def process_cache(unique_keys=None):
     """
-    修饰器——缓存token转换为索引的结果
+    数据预处理结果缓存修饰器
+    :param unique_key: 相关数据集构造类中的成员变量，用于区分缓存结果
     """
 
-    def wrapper(*args, **kwargs):
-        filepath = kwargs["filepath"]  # 文件路径
-        filename = "".join(filepath.split(os.sep)[-1].split(".")[:-1])  # 文件名（不包含拓展名）
-        filedir = f"{os.sep}".join(filepath.split(os.sep)[:-1])  # 文件目录
+    if unique_keys is None:
+        raise ValueError(
+            "`unique_key`不能为空，需指定为相关数据集构造类的成员变量，如['max_sen_len', 'masked_rate', ...]"
+        )
 
-        cache_filename = f"cache_{filename}_token2idx.pt"
-        cache_path = os.path.join(filedir, cache_filename)
+    def cache_decorator(func):
+        def wrapper(*args, **kwargs):
+            logging.info(f"## 预处理缓存文件的关键字为：{unique_keys}")
+            filepath = kwargs["filepath"]  # 文件路径
+            filename = "_".join(
+                filepath.split(os.sep)[-1].split(".")[:-1]
+            )  # 文件名（不包含拓展名）
+            filedir = f"{os.sep}".join(filepath.split(os.sep)[:-1])  # 文件目录
 
-        start_time = time.time()
-        if not os.path.exists(cache_path):
-            logging.info(f"缓存文件 {cache_path} 不存在，处理数据集并缓存！")
-            data = func(*args, **kwargs)  # token转换为索引
-            with open(cache_path, "wb") as f:
-                torch.save(data, f)  # 缓存
-        else:
-            logging.info(f"缓存文件 {cache_path} 存在，载入缓存！")
-            with open(cache_path, "rb") as f:
-                data = torch.load(f)
-        end_time = time.time()
+            obj = args[0]  # 获取对象，因为data_process()的第1个参数为self，即对象本身
+            cache_filename = f"cache_{filename}_"  # 缓存文件名
+            # 根据unique_keys和对应值，更新缓存文件名
+            for key in unique_keys:
+                key_abbr = "".join(
+                    [part[0] for part in key.split("_")]
+                )  # 生成key的简略写法，避免缓存文件名过长
+                cache_filename += f"{key_abbr}{obj.__dict__[key]}_"
+            cache_filepath = os.path.join(filedir, cache_filename[:-1] + ".pt")
 
-        logging.info(f"数据预处理一共耗时{(end_time - start_time):.3f}s")
+            start_time = time.time()
+            if not os.path.exists(cache_filepath):
+                logging.info(f"缓存文件 {cache_filepath} 不存在，处理数据集并缓存！")
+                data = func(*args, **kwargs)  # token转换为索引
+                with open(cache_filepath, "wb") as f:
+                    torch.save(data, f)  # 缓存
+            else:
+                logging.info(f"缓存文件 {cache_filepath} 存在，载入缓存！")
+                with open(cache_filepath, "rb") as f:
+                    data = torch.load(f)
+            end_time = time.time()
 
-        return data
+            logging.info(f"数据预处理一共耗时{(end_time - start_time):.3f}s")
 
-    return wrapper
+            return data
+
+        return wrapper
+
+    return cache_decorator
 
 
 class LoadSenClsDataset:
@@ -139,8 +159,8 @@ class LoadSenClsDataset:
         self.SEP_IDX = self.vocab["[SEP]"]
         self.is_sample_shuffle = is_sample_shuffle
 
-    @cache_decorator
-    def token_to_idx(self, filepath=None):
+    @process_cache(unique_keys=["max_sen_len"])
+    def data_process(self, filepath=None):
         """
         将token序列转换为索引序列，并返回最长序列长度
         """
@@ -181,7 +201,7 @@ class LoadSenClsDataset:
         创建DataLoader
         :param only_test: 是否只返回测试集
         """
-        test_data, _ = self.token_to_idx(filepath=test_filepath)
+        test_data, _ = self.data_process(filepath=test_filepath)
         test_loader = DataLoader(
             test_data,
             batch_size=self.batch_size,
@@ -191,7 +211,7 @@ class LoadSenClsDataset:
         if only_test:
             return test_loader
 
-        train_data, max_len = self.token_to_idx(filepath=train_filepath)
+        train_data, max_len = self.data_process(filepath=train_filepath)
         if self.max_sen_len == "same":
             self.max_sen_len = max_len
 
@@ -202,7 +222,7 @@ class LoadSenClsDataset:
             collate_fn=self.generate_batch,
         )
 
-        val_data, _ = self.token_to_idx(filepath=val_filepath)
+        val_data, _ = self.data_process(filepath=val_filepath)
         val_loader = DataLoader(
             val_data,
             batch_size=self.batch_size,
@@ -243,9 +263,9 @@ class LoadPairSenClsDataset(LoadSenClsDataset):
         super().__init__(**kwargs)
         pass
 
-    # 重载父类LoadSenClsDataset中的token_to_idx和generate_batch方法
-    @cache_decorator
-    def token_to_idx(self, filepath=None):
+    # 覆盖父类LoadSenClsDataset中的data_process和generate_batch方法
+    @process_cache(unique_keys=["max_sen_len"])
+    def data_process(self, filepath=None):
         """
         将token序列转换为索引序列，并返回最长序列长度
         """

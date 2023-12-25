@@ -3,14 +3,14 @@ https://github.com/aceimnorstuvwxz/toutiao-text-classfication-dataset
 
 ## 数据格式
 
-```text
+```txt
 6552431613437805063_!_102_!_news_entertainment_!_谢娜为李浩菲澄清网络谣言，之后她的两个行为给自己加分_!_佟丽娅,网络谣言,快乐大本营,李浩菲,谢娜,观众们
 ```
 每行一条数据，以 `_!_` 分割字段，从前往后分别是：新闻ID，类别代码（见下文），类别名称（见下文），新闻标题文本，新闻关键词
 
 ## 类别与名称
 
-```text
+```txt
 100 民生 故事 news_story
 101 文化 文化 news_culture
 102 娱乐 娱乐 news_entertainment
@@ -34,7 +34,7 @@ https://github.com/aceimnorstuvwxz/toutiao-text-classfication-dataset
 原始数据集下载完成后，运行当前文件夹中的 `format.py` 脚本文件即可将原始数据按照 `7:2:1` 的比例划分成规整的训练集 `toutiao_train.txt`、验证集 `toutiao_val.txt` 和 测试集 `test.txt`
 
 处理完成后的数据格式如下：
-```text
+```txt
 轻松一刻：带你看全球最噩梦监狱，每天进几百人，审讯时已过几年_!_11
 千万不要乱申请网贷，否则后果很严重_!_4
 10年前的今年，纪念5.12汶川大地震10周年_!_11
